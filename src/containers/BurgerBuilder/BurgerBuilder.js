@@ -4,6 +4,7 @@ import Burger from '../../components/Burger/Burger';
 import BuildControls from '../../components/BuildControls/BuildControls';
 import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/OrderSummary/OrderSummary';
+import axios from '../../axios-orders';
 
 const PRICES = {
     salad: 0.5,
@@ -15,15 +16,19 @@ const PRICES = {
 class BurgerBuilder extends Component {
     
     state = {
-        ingredients: {
-            salad: 0,
-            bacon: 0,
-            cheese: 0,
-            meat: 0
-        },
+        ingredients: null,
         totalPrice: 4,
         purchasable: false,
         purchasing: false
+    }
+
+    componentDidMount() {
+        axios.get('/ingredients.json').then(
+            res => {
+                this.setState({ingredients: res.data});
+            }
+        )
+        .catch(error => console.log(error));
     }
 
     addIngredients = (type) => {
@@ -69,7 +74,21 @@ class BurgerBuilder extends Component {
     }
 
     continueHandler = () => {
-        alert('Continue');
+        // const order = {
+        //     ingredients: this.state.ingredients,
+        //     price: this.state.totalPrice,
+        //     customer: {
+        //         name: 'Test',
+        //         address: {
+        //             state: 'Karnataka'
+        //         },
+        //         email: 'test@test.com',
+        //         delivery: 'fastest'
+        //     }
+        // }
+        // axios.post('/orders.json', order).then(res => console.log(res)).catch(error => console.log(error))
+        
+        this.props.history.push('/checkout');
     }
 
     render() {
@@ -81,28 +100,35 @@ class BurgerBuilder extends Component {
                 disabledInfo[key] = disabledInfo[key] <= 0;
             }
             
-        return (
-            <Aux>
-                <Modal show={this.state.purchasing}
-                    backdropClicked={this.purchaseCancelHandler}
-                >
-                    
-                    <OrderSummary ingredients={this.state.ingredients} 
-                    cancelled={this.purchaseCancelHandler}
-                    continue={this.continueHandler}
-                    price={this.state.totalPrice}
+            let content = null;
+            if (this.state.ingredients) {
+                content = (
+                    <Aux>
+                    <Modal show={this.state.purchasing}
+                        backdropClicked={this.purchaseCancelHandler}
+                    >
+                        <OrderSummary ingredients={this.state.ingredients} 
+                        cancelled={this.purchaseCancelHandler}
+                        continue={this.continueHandler}
+                        price={this.state.totalPrice}
+                        />
+                    </Modal>
+                    <Burger ingredients = {this.state.ingredients}/>
+                    <BuildControls 
+                        ingredientAdded={this.addIngredients}
+                        ingredientRemoved={this.removeIngredients}
+                        disabled={disabledInfo}
+                        price={this.state.totalPrice}
+                        purchasable={this.state.purchasable}
+                        ordered={this.purchasableHandler}
                     />
-                </Modal>
-                <Burger ingredients = {this.state.ingredients}/>
-                <BuildControls 
-                    ingredientAdded={this.addIngredients}
-                    ingredientRemoved={this.removeIngredients}
-                    disabled={disabledInfo}
-                    price={this.state.totalPrice}
-                    purchasable={this.state.purchasable}
-                    ordered={this.purchasableHandler}
-                />
-            </Aux>
+                </Aux>
+                )
+            }
+        return (  
+            <Aux>
+           {content}
+           </Aux>          
         );
     }
 }
